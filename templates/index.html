@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent POC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple scrollbar for chat window */
+        #chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        #chat-window::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        .chat-bubble {
+            max-width: 75%;
+            padding: 10px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            /* This is key for showing newlines from the bot */
+            white-space: pre-wrap;
+        }
+        .user-bubble {
+            background-color: #3b82f6;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-bubble {
+            background-color: #e5e7eb;
+            color: #1f2937;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+    <div class="w-full max-w-lg bg-white rounded-lg shadow-2xl flex flex-col" style="height: 70vh;">
+        <!-- Header -->
+        <div class="bg-blue-600 text-white p-4 rounded-t-lg shadow-md">
+            <h1 class="text-xl font-bold text-center">E-commerce AI Agent POC</h1>
+            <p class="text-sm text-center text-blue-100">Validation Testbed</p>
+        </div>
+
+        <!-- Chat Window -->
+        <div id="chat-window" class="flex-1 p-4 space-y-4 overflow-y-auto flex flex-col">
+            <!-- Messages will be appended here -->
+            <div class="chat-bubble bot-bubble">
+                Hi! I'm your e-commerce assistant. You can ask me to track an order, start a return, or inquire about products.
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+            <div class="flex space-x-2">
+                <input type="text" id="message-input"
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your message...">
+                <button id="send-button"
+                    class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message === '') return;
+
+            // 1. Display user's message
+            appendMessage(message, 'user');
+            messageInput.value = '';
+            showTypingIndicator();
+
+            try {
+                // 2. Send message to Flask backend
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 3. Display bot's response
+                removeTypingIndicator();
+                appendMessage(data.response, 'bot');
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                removeTypingIndicator();
+                appendMessage('Sorry, I seem to be having trouble connecting. Please try again.', 'bot');
+            }
+        }
+
+        function appendMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-bubble');
+            messageElement.classList.add(sender === 'user' ? 'user-bubble' : 'bot-bubble');
+            messageElement.textContent = message;
+            chatWindow.appendChild(messageElement);
+
+            // Scroll to bottom
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingElement = document.createElement('div');
+            typingElement.id = 'typing-indicator';
+            typingElement.classList.add('chat-bubble', 'bot-bubble');
+            typingElement.innerHTML = '<span class="animate-pulse">...</span>';
+            chatWindow.appendChild(typingElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingElement = document.getElementById('typing-indicator');
+            if (typingElement) {
+                typingElement.remove();
+            }
+        }
+    </script>
+</body>
+</html>
