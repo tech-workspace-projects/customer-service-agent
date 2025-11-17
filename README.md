@@ -8,19 +8,17 @@ This version is enhanced with two features powered by the Gemini API:
 
 ### How to Run the Application
 
-1. Ensure you have Python 3.7+ installed.
-2. Create a virtual environment (recommended):
+1. Install uv using pip or brew:
 ```commandline
-python -m venv venv
-source venv/bin/activate  
+pip3 install uv
 ```
-3. Install the dependencies:
+2. Sync uv packages for environment setup:
 ```commandline
-pip install -r requirements.txt
+uv sync
 ```
 4. Run the Flask application:
 ```commandline
-python app.py
+uv run app.py
 ```
 The application will be running at `http://127.0.0.1:5001`. Open this URL in your browser to interact with the chatbot.
 
